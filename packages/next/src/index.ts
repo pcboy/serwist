@@ -178,10 +178,19 @@ const withSerwistInit = (userOptions: InjectManifestOptions): ((nextConfig?: Nex
             cwd: publicDir,
             ignore: ["swe-worker-*.js", destBase, `${destBase}.map`],
           });
-          resolvedManifestEntries = publicScan.map((f) => ({
-            url: path.posix.join(basePath, f),
-            revision: getFileHash(path.join(publicDir, f)),
-          }));
+          resolvedManifestEntries = publicScan.reduce((acc, f) => {
+            const filePath = path.join(publicDir, f)
+            /* Make sure we are dealing with an actual file 
+            * and not a symlink to a folder */
+            if (fs.statSync(filePath).isFile()) {
+              acc.push({
+                url: path.posix.join(basePath, f),
+                revision: getFileHash(filePath),
+              })
+            }
+
+            return acc
+          }, [])
         }
 
         const publicPath = config.output?.publicPath;
