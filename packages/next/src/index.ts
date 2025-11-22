@@ -136,6 +136,7 @@ const withSerwistInit = (userOptions: InjectManifestOptions): ((nextConfig?: Nex
         const cleanUpList = globSync(["swe-worker-*.js", "swe-worker-*.js.map", destBase, `${destBase}.map`], {
           absolute: true,
           nodir: true,
+          follow: true,
           cwd: destDir,
         });
 
@@ -175,22 +176,14 @@ const withSerwistInit = (userOptions: InjectManifestOptions): ((nextConfig?: Nex
         if (!resolvedManifestEntries) {
           const publicScan = globSync(globPublicPatterns, {
             nodir: true,
+            follow: true,
             cwd: publicDir,
             ignore: ["swe-worker-*.js", destBase, `${destBase}.map`],
           });
-          resolvedManifestEntries = publicScan.reduce((acc, f) => {
-            const filePath = path.join(publicDir, f)
-            /* Make sure we are dealing with an actual file 
-            * and not a symlink to a folder */
-            if (fs.statSync(filePath).isFile()) {
-              acc.push({
-                url: path.posix.join(basePath, f),
-                revision: getFileHash(filePath),
-              })
-            }
-
-            return acc
-          }, [])
+          resolvedManifestEntries = publicScan.map((f) => ({
+            url: path.posix.join(basePath, f),
+            revision: getFileHash(path.join(publicDir, f)),
+          }));
         }
 
         const publicPath = config.output?.publicPath;
